@@ -347,18 +347,42 @@ export default function App() {
             </div>
 
             {friends.length === 0 && !friendsLoading && (
-              <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-                No recipients added yet.{" "}
-                <button
-                  type="button"
-                  onClick={() => setView("settings")}
-                  className="text-primary underline underline-offset-2 hover:no-underline"
-                  data-ocid="location.manage_friends_link"
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0 mt-0.5"
                 >
-                  Add to notify list
-                </button>{" "}
-                to send notifications.
-              </p>
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M12 8v4M12 16h.01"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span>
+                  No recipients added yet.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setView("settings")}
+                    className="text-primary underline underline-offset-2 hover:no-underline"
+                    data-ocid="location.manage_friends_link"
+                  >
+                    Add to notify list
+                  </button>{" "}
+                  to send notifications.
+                </span>
+              </div>
             )}
 
             {friends.length > 0 && (
@@ -415,6 +439,33 @@ export default function App() {
                 </span>
               )}
             </Button>
+
+            {!location.trim() && friends.length > 0 && (
+              <p
+                className="text-xs text-muted-foreground text-center"
+                data-ocid="location.hint_empty_location"
+              >
+                Type a location to enable sending
+              </p>
+            )}
+
+            {friends.length === 0 && location.trim() && (
+              <p
+                className="text-xs text-muted-foreground text-center"
+                data-ocid="location.hint_no_friends"
+              >
+                Add at least one friend in the Notify List to send
+              </p>
+            )}
+
+            {friends.length === 0 && !location.trim() && (
+              <p
+                className="text-xs text-muted-foreground text-center"
+                data-ocid="location.hint_no_friends_and_location"
+              >
+                Type a location and add a friend in the Notify List to send
+              </p>
+            )}
 
             {sendResult === "success" && (
               <div

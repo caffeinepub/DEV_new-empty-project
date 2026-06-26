@@ -30797,21 +30797,55 @@ function App() {
             }
           )
         ] }),
-        friends.length === 0 && !friendsLoading && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2", children: [
-          "No recipients added yet.",
-          " ",
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
+        friends.length === 0 && !friendsLoading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "svg",
             {
-              type: "button",
-              onClick: () => setView("settings"),
-              className: "text-primary underline underline-offset-2 hover:no-underline",
-              "data-ocid": "location.manage_friends_link",
-              children: "Add to notify list"
+              width: "14",
+              height: "14",
+              viewBox: "0 0 24 24",
+              fill: "none",
+              "aria-hidden": "true",
+              className: "shrink-0 mt-0.5",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "circle",
+                  {
+                    cx: "12",
+                    cy: "12",
+                    r: "10",
+                    stroke: "currentColor",
+                    strokeWidth: "2"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "path",
+                  {
+                    d: "M12 8v4M12 16h.01",
+                    stroke: "currentColor",
+                    strokeWidth: "2",
+                    strokeLinecap: "round"
+                  }
+                )
+              ]
             }
           ),
-          " ",
-          "to send notifications."
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+            "No recipients added yet.",
+            " ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setView("settings"),
+                className: "text-primary underline underline-offset-2 hover:no-underline",
+                "data-ocid": "location.manage_friends_link",
+                children: "Add to notify list"
+              }
+            ),
+            " ",
+            "to send notifications."
+          ] })
         ] }),
         friends.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
           "Will notify",
@@ -30870,6 +30904,30 @@ function App() {
               ),
               "Send Arrival Notification"
             ] })
+          }
+        ),
+        !location2.trim() && friends.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "text-xs text-muted-foreground text-center",
+            "data-ocid": "location.hint_empty_location",
+            children: "Type a location to enable sending"
+          }
+        ),
+        friends.length === 0 && location2.trim() && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "text-xs text-muted-foreground text-center",
+            "data-ocid": "location.hint_no_friends",
+            children: "Add at least one friend in the Notify List to send"
+          }
+        ),
+        friends.length === 0 && !location2.trim() && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "text-xs text-muted-foreground text-center",
+            "data-ocid": "location.hint_no_friends_and_location",
+            children: "Type a location and add a friend in the Notify List to send"
           }
         ),
         sendResult === "success" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
