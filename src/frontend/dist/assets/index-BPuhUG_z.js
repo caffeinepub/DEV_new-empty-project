@@ -30311,8 +30311,9 @@ function generateState() {
   return Array.from(arr, (b2) => b2.toString(16).padStart(2, "0")).join("");
 }
 function buildOAuthUrl() {
-  const state = generateState();
-  localStorage.setItem(STATE_KEY, state);
+  const existing = localStorage.getItem(STATE_KEY);
+  const state = existing ?? generateState();
+  if (!existing) localStorage.setItem(STATE_KEY, state);
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: REDIRECT_URI,

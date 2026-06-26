@@ -20,8 +20,9 @@ function generateState(): string {
 }
 
 function buildOAuthUrl(): string {
-  const state = generateState();
-  localStorage.setItem(STATE_KEY, state);
+  const existing = localStorage.getItem(STATE_KEY);
+  const state = existing ?? generateState();
+  if (!existing) localStorage.setItem(STATE_KEY, state);
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: REDIRECT_URI,

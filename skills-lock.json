@@ -29,12 +29,12 @@
     "extension-email-calendar-events": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "eec0ee57858b86d59314ea214cc1184c9653a9c068236f63dab50fed07ae7c3f"
+      "computedHash": "2b559bb1fd0081f4c229797ad7c99795e6d3a901ca262f9a860ad0bab196d480"
     },
     "extension-email-marketing": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "2e5bbb054878c653a7595ca29d290a3d1ec52c8482af5c507570d24426140af7"
+      "computedHash": "addef9df9f3b7cbc88391ace1dc38d8c876afefb4507b2fd05c0dc368775b993"
     },
     "extension-email-raw": {
       "source": "caffeinelabs/skills",
@@ -54,7 +54,7 @@
     "extension-invite-links": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "bf3e30a5cba02fce302a34e40822e2a1320948a3041167e7ac3082883bdb3c82"
+      "computedHash": "8c7a2d7aa943b4fd4be1c6057fb9a69921bc82aaf52cbaab7852a73e454b7f8f"
     },
     "extension-object-storage": {
       "source": "caffeinelabs/skills",
@@ -64,7 +64,7 @@
     "extension-openai": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "e25568ff4fbff3828962734be30767eeba81ed0eeaaf062d396e29a91725b4f3"
+      "computedHash": "2279db393bc2b436b3fdbcc8e50a99695e46ac0ee992566e55e163dae8dd25e0"
     },
     "extension-oql": {
       "source": "caffeinelabs/skills",
@@ -74,7 +74,7 @@
     "extension-posting-to-x": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "a117fbcc9e37eaa6b2862004111d42424fcae1b1edefed7896c55843fa56b627"
+      "computedHash": "eca161b613c52c44dbea5de582315daa6c6aac8c7f5466f7e2e873d51f07cf45"
     },
     "extension-qr-code": {
       "source": "caffeinelabs/skills",
@@ -89,7 +89,7 @@
     "extension-user-approval": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "d21e4cd30b32e147decc2896041402f05da108f625eb9a6c25a710408a52e045"
+      "computedHash": "3fc3f0077fc47897203d7f6b85ff5a742f337e40c29504c85a60d8ace12e7522"
     }
   }
 }
