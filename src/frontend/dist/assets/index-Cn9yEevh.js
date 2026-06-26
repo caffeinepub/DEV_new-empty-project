@@ -30299,7 +30299,7 @@ function Input({ className, type, ...props }) {
 }
 const AUTH_KEY = "gmailer_authenticated";
 const STATE_KEY = "gmailer_oauth_state";
-const GOOGLE_CLIENT_ID = "776815084452-57d5mm927nf70ea4qhuomtuhggges3tj.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "776815084452-8t1kcrjouc2pp7c6s2r86k41c6cs5mqd.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = "";
 const REDIRECT_URI = "https://new-empty-project-lcr.dev.caffeine.xyz";
 const OAUTH_SCOPES = "https://www.googleapis.com/auth/gmail.send";
