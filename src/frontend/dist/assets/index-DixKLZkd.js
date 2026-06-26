@@ -30297,6 +30297,16 @@ function Input({ className, type, ...props }) {
     }
   );
 }
+function Skeleton({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "skeleton",
+      className: cn("bg-accent animate-pulse rounded-md", className),
+      ...props
+    }
+  );
+}
 const AUTH_KEY = "gmailer_authenticated";
 const STATE_KEY = "gmailer_oauth_state";
 const GOOGLE_CLIENT_ID = "776815084452-8t1kcrjouc2pp7c6s2r86k41c6cs5mqd.apps.googleusercontent.com";
@@ -30395,45 +30405,53 @@ function useAuthStatus() {
   }, []);
   return { authStatus, oauthUrl, exchanging, exchangeError, logout };
 }
-const FRIENDS_KEY = "gmailer_friends";
-function loadFriends() {
-  try {
-    const raw = localStorage.getItem(FRIENDS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-function saveFriends(friends) {
-  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends));
-}
 function useFriends() {
-  const [friends, setFriends] = reactExports.useState(loadFriends);
-  const addFriend = reactExports.useCallback((email) => {
-    setFriends((prev) => {
-      if (prev.includes(email)) return prev;
-      const next = [...prev, email];
-      saveFriends(next);
-      return next;
+  const { actor, isFetching } = useActor(createActor);
+  const [friends, setFriends] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    if (isFetching || !actor) return;
+    let cancelled = false;
+    setLoading(true);
+    actor.getFriends().then((list) => {
+      if (!cancelled) setFriends(list);
+    }).catch(() => {
+      if (!cancelled) setFriends([]);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
-  }, []);
-  const removeFriend = reactExports.useCallback((email) => {
-    setFriends((prev) => {
-      const next = prev.filter((e) => e !== email);
-      saveFriends(next);
-      return next;
-    });
-  }, []);
-  return { friends, addFriend, removeFriend };
+    return () => {
+      cancelled = true;
+    };
+  }, [actor, isFetching]);
+  const addFriend = reactExports.useCallback(
+    async (email) => {
+      if (!actor) return;
+      await actor.addFriend(email);
+      setFriends((prev) => prev.includes(email) ? prev : [...prev, email]);
+    },
+    [actor]
+  );
+  const removeFriend = reactExports.useCallback(
+    async (email) => {
+      if (!actor) return;
+      setFriends((prev) => prev.filter((e) => e !== email));
+      await actor.removeFriend(email);
+    },
+    [actor]
+  );
+  return { friends, addFriend, removeFriend, loading };
 }
 function App() {
   const { authStatus, oauthUrl, exchanging, exchangeError, logout } = useAuthStatus();
-  const { friends, addFriend, removeFriend } = useFriends();
+  const {
+    friends,
+    addFriend,
+    removeFriend,
+    loading: friendsLoading
+  } = useFriends();
   const { actor } = useActor(createActor);
-  const [view, setView] = reactExports.useState(
-    authStatus === "authenticated" ? "location" : "oauth"
-  );
+  const [view, setView] = reactExports.useState("oauth");
   const [location2, setLocation] = reactExports.useState("");
   const [newFriendEmail, setNewFriendEmail] = reactExports.useState("");
   const [sending, setSending] = reactExports.useState(false);
@@ -30441,7 +30459,11 @@ function App() {
     "idle"
   );
   const [friendError, setFriendError] = reactExports.useState("");
-  const effectiveView = authStatus === "unauthenticated" ? "oauth" : view === "oauth" ? "location" : view;
+  const effectiveView = (() => {
+    if (authStatus === "authenticated" && view === "oauth") return "location";
+    if (authStatus === "unauthenticated" && view === "location") return "oauth";
+    return view;
+  })();
   const handleSendNotification = reactExports.useCallback(async () => {
     if (!location2.trim()) return;
     setSending(true);
@@ -30460,18 +30482,50 @@ function App() {
       setSending(false);
     }
   }, [location2, actor]);
-  const handleAddFriend = reactExports.useCallback(() => {
+  const handleAddFriend = reactExports.useCallback(async () => {
     const email = newFriendEmail.trim().toLowerCase();
     if (!email) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setFriendError("Please enter a valid email address.");
       return;
     }
-    addFriend(email);
-    setNewFriendEmail("");
     setFriendError("");
+    await addFriend(email);
+    setNewFriendEmail("");
   }, [newFriendEmail, addFriend]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(Layout, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-b border-border bg-card sticky top-0 z-10", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex max-w-sm mx-auto px-4", children: [
+      authStatus === "authenticated" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setView("location"),
+          className: `flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${effectiveView === "location" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`,
+          "data-ocid": "nav.location_tab",
+          children: "Send"
+        }
+      ),
+      authStatus === "unauthenticated" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setView("oauth"),
+          className: `flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${effectiveView === "oauth" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`,
+          "data-ocid": "nav.oauth_tab",
+          children: "Connect Gmail"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setView("settings"),
+          className: `flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${effectiveView === "settings" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`,
+          "data-ocid": "nav.settings_tab",
+          children: "Notify List"
+        }
+      )
+    ] }) }),
     effectiveView === "oauth" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col items-center justify-center px-4 py-16 gap-8", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center shadow-elevation", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "svg",
@@ -30743,17 +30797,17 @@ function App() {
             }
           )
         ] }),
-        friends.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2", children: [
-          "No friends added yet.",
+        friends.length === 0 && !friendsLoading && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2", children: [
+          "No recipients added yet.",
           " ",
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               type: "button",
-              onClick: () => setView("friends"),
+              onClick: () => setView("settings"),
               className: "text-primary underline underline-offset-2 hover:no-underline",
               "data-ocid": "location.manage_friends_link",
-              children: "Add friends"
+              children: "Add to notify list"
             }
           ),
           " ",
@@ -30764,7 +30818,7 @@ function App() {
           " ",
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: friends.length }),
           " ",
-          friends.length === 1 ? "friend" : "friends"
+          friends.length === 1 ? "recipient" : "recipients"
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Button,
@@ -30857,70 +30911,21 @@ function App() {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
-          {
-            type: "button",
-            onClick: () => setView("friends"),
-            className: "text-sm text-primary hover:underline underline-offset-2 transition-smooth",
-            "data-ocid": "location.manage_friends_button",
-            children: [
-              "Manage friends (",
-              friends.length,
-              ")"
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "·" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            type: "button",
-            onClick: logout,
-            className: "text-sm text-muted-foreground hover:text-foreground transition-smooth",
-            "data-ocid": "location.logout_button",
-            children: "Sign out"
-          }
-        )
-      ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: logout,
+          className: "text-sm text-muted-foreground hover:text-foreground transition-smooth",
+          "data-ocid": "location.logout_button",
+          children: "Sign out"
+        }
+      )
     ] }),
-    effectiveView === "friends" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col items-center px-4 py-10 gap-6 max-w-sm mx-auto w-full", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full flex items-center gap-3", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => setView("location"),
-            className: "text-muted-foreground hover:text-foreground transition-smooth p-1 -ml-1 rounded-md",
-            "aria-label": "Go back",
-            "data-ocid": "friends.back_button",
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "svg",
-              {
-                width: "20",
-                height: "20",
-                viewBox: "0 0 24 24",
-                fill: "none",
-                "aria-hidden": "true",
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "path",
-                  {
-                    d: "M19 12H5M12 19l-7-7 7-7",
-                    stroke: "currentColor",
-                    strokeWidth: "2",
-                    strokeLinecap: "round",
-                    strokeLinejoin: "round"
-                  }
-                )
-              }
-            )
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-display font-bold text-foreground", children: "Friends" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Manage your notification recipients" })
-        ] })
+    effectiveView === "settings" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col items-center px-4 py-10 gap-6 max-w-sm mx-auto w-full", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-display font-bold text-foreground", children: "Notify List" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-0.5", children: "People who receive your arrival notifications" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full bg-card border border-border rounded-xl p-5 shadow-subtle flex flex-col gap-3", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -30928,7 +30933,7 @@ function App() {
           {
             htmlFor: "add-friend-email",
             className: "text-sm font-medium text-foreground",
-            children: "Add a friend"
+            children: "Add a recipient"
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
@@ -30944,7 +30949,7 @@ function App() {
               },
               onKeyDown: (e) => e.key === "Enter" && handleAddFriend(),
               type: "email",
-              "data-ocid": "friends.add_input",
+              "data-ocid": "settings.add_input",
               className: "flex-1"
             }
           ),
@@ -30955,7 +30960,7 @@ function App() {
               onClick: handleAddFriend,
               variant: "outline",
               className: "shrink-0 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth",
-              "data-ocid": "friends.add_button",
+              "data-ocid": "settings.add_button",
               children: "Add"
             }
           )
@@ -30964,16 +30969,27 @@ function App() {
           "p",
           {
             className: "text-xs text-destructive",
-            "data-ocid": "friends.field_error",
+            "data-ocid": "settings.field_error",
             children: friendError
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full flex flex-col gap-2", children: friends.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full flex flex-col gap-2", children: friendsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          className: "flex flex-col gap-2",
+          "data-ocid": "settings.loading_state",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-14 w-full rounded-lg" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-14 w-full rounded-lg" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-14 w-3/4 rounded-lg" })
+          ]
+        }
+      ) }) : friends.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
           className: "text-center py-10 text-muted-foreground text-sm bg-card border border-border rounded-xl",
-          "data-ocid": "friends.empty_state",
+          "data-ocid": "settings.empty_state",
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "svg",
@@ -31016,14 +31032,14 @@ function App() {
                 ]
               }
             ),
-            "No friends yet. Add someone above!"
+            "No recipients yet. Add someone above!"
           ]
         }
       ) : friends.map((email, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
           className: "flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 shadow-xs",
-          "data-ocid": `friends.item.${i + 1}`,
+          "data-ocid": `settings.item.${i + 1}`,
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 min-w-0", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-primary uppercase", children: email[0] }) }),
@@ -31036,7 +31052,7 @@ function App() {
                 onClick: () => removeFriend(email),
                 className: "text-muted-foreground hover:text-destructive transition-smooth shrink-0 ml-2 p-1 rounded-md",
                 "aria-label": `Remove ${email}`,
-                "data-ocid": `friends.delete_button.${i + 1}`,
+                "data-ocid": `settings.delete_button.${i + 1}`,
                 children: /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "svg",
                   {
@@ -31063,7 +31079,7 @@ function App() {
         },
         email
       )) }),
-      friends.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "secondary", className: "text-xs", children: [
+      !friendsLoading && friends.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "secondary", className: "text-xs", children: [
         friends.length,
         " ",
         friends.length === 1 ? "recipient" : "recipients",

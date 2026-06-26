@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
 import { useFriends } from "@/hooks/useFriends";
 import type { AppView } from "@/types";
@@ -12,12 +13,15 @@ import { useCallback, useState } from "react";
 export default function App() {
   const { authStatus, oauthUrl, exchanging, exchangeError, logout } =
     useAuthStatus();
-  const { friends, addFriend, removeFriend } = useFriends();
+  const {
+    friends,
+    addFriend,
+    removeFriend,
+    loading: friendsLoading,
+  } = useFriends();
   const { actor } = useActor(createActor);
 
-  const [view, setView] = useState<AppView>(
-    authStatus === "authenticated" ? "location" : "oauth",
-  );
+  const [view, setView] = useState<AppView>("oauth");
   const [location, setLocation] = useState("");
   const [newFriendEmail, setNewFriendEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -26,13 +30,13 @@ export default function App() {
   );
   const [friendError, setFriendError] = useState("");
 
-  // Sync view when auth status changes
-  const effectiveView: AppView =
-    authStatus === "unauthenticated"
-      ? "oauth"
-      : view === "oauth"
-        ? "location"
-        : view;
+  // When authenticated, force away from oauth. When unauthenticated, force away from location.
+  // Settings panel is always accessible.
+  const effectiveView: AppView = (() => {
+    if (authStatus === "authenticated" && view === "oauth") return "location";
+    if (authStatus === "unauthenticated" && view === "location") return "oauth";
+    return view;
+  })();
 
   const handleSendNotification = useCallback(async () => {
     if (!location.trim()) return;
@@ -53,20 +57,66 @@ export default function App() {
     }
   }, [location, actor]);
 
-  const handleAddFriend = useCallback(() => {
+  const handleAddFriend = useCallback(async () => {
     const email = newFriendEmail.trim().toLowerCase();
     if (!email) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setFriendError("Please enter a valid email address.");
       return;
     }
-    addFriend(email);
-    setNewFriendEmail("");
     setFriendError("");
+    await addFriend(email);
+    setNewFriendEmail("");
   }, [newFriendEmail, addFriend]);
 
   return (
     <Layout>
+      {/* Tab bar — always visible so settings are accessible when unauthenticated */}
+      <div className="border-b border-border bg-card sticky top-0 z-10">
+        <div className="flex max-w-sm mx-auto px-4">
+          {authStatus === "authenticated" && (
+            <button
+              type="button"
+              onClick={() => setView("location")}
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                effectiveView === "location"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              data-ocid="nav.location_tab"
+            >
+              Send
+            </button>
+          )}
+          {authStatus === "unauthenticated" && (
+            <button
+              type="button"
+              onClick={() => setView("oauth")}
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                effectiveView === "oauth"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              data-ocid="nav.oauth_tab"
+            >
+              Connect Gmail
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setView("settings")}
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+              effectiveView === "settings"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            data-ocid="nav.settings_tab"
+          >
+            Notify List
+          </button>
+        </div>
+      </div>
+
       {/* OAuth view */}
       {effectiveView === "oauth" && (
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 gap-8">
@@ -129,7 +179,6 @@ export default function App() {
             </p>
           </div>
 
-          {/* Exchanging / error states */}
           {exchanging && (
             <div
               className="flex items-center gap-3 text-sm text-muted-foreground bg-card border border-border rounded-xl px-5 py-4 shadow-subtle w-full max-w-sm"
@@ -249,7 +298,6 @@ export default function App() {
       {/* Location view */}
       {effectiveView === "location" && (
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 gap-6">
-          {/* Map pin icon */}
           <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center shadow-subtle">
             <svg
               width="44"
@@ -298,16 +346,16 @@ export default function App() {
               />
             </div>
 
-            {friends.length === 0 && (
+            {friends.length === 0 && !friendsLoading && (
               <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-                No friends added yet.{" "}
+                No recipients added yet.{" "}
                 <button
                   type="button"
-                  onClick={() => setView("friends")}
+                  onClick={() => setView("settings")}
                   className="text-primary underline underline-offset-2 hover:no-underline"
                   data-ocid="location.manage_friends_link"
                 >
-                  Add friends
+                  Add to notify list
                 </button>{" "}
                 to send notifications.
               </p>
@@ -319,7 +367,7 @@ export default function App() {
                 <span className="font-medium text-foreground">
                   {friends.length}
                 </span>{" "}
-                {friends.length === 1 ? "friend" : "friends"}
+                {friends.length === 1 ? "recipient" : "recipients"}
               </p>
             )}
 
@@ -401,72 +449,36 @@ export default function App() {
             )}
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setView("friends")}
-              className="text-sm text-primary hover:underline underline-offset-2 transition-smooth"
-              data-ocid="location.manage_friends_button"
-            >
-              Manage friends ({friends.length})
-            </button>
-            <span className="text-muted-foreground">·</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-              data-ocid="location.logout_button"
-            >
-              Sign out
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+            data-ocid="location.logout_button"
+          >
+            Sign out
+          </button>
         </div>
       )}
 
-      {/* Friends view */}
-      {effectiveView === "friends" && (
+      {/* Settings / Notify list view */}
+      {effectiveView === "settings" && (
         <div className="flex-1 flex flex-col items-center px-4 py-10 gap-6 max-w-sm mx-auto w-full">
-          <div className="w-full flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setView("location")}
-              className="text-muted-foreground hover:text-foreground transition-smooth p-1 -ml-1 rounded-md"
-              aria-label="Go back"
-              data-ocid="friends.back_button"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M19 12H5M12 19l-7-7 7-7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <div>
-              <h2 className="text-xl font-display font-bold text-foreground">
-                Friends
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Manage your notification recipients
-              </p>
-            </div>
+          <div className="w-full">
+            <h2 className="text-xl font-display font-bold text-foreground">
+              Notify List
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              People who receive your arrival notifications
+            </p>
           </div>
 
-          {/* Add friend */}
+          {/* Add recipient */}
           <div className="w-full bg-card border border-border rounded-xl p-5 shadow-subtle flex flex-col gap-3">
             <label
               htmlFor="add-friend-email"
               className="text-sm font-medium text-foreground"
             >
-              Add a friend
+              Add a recipient
             </label>
             <div className="flex gap-2">
               <Input
@@ -479,7 +491,7 @@ export default function App() {
                 }}
                 onKeyDown={(e) => e.key === "Enter" && handleAddFriend()}
                 type="email"
-                data-ocid="friends.add_input"
+                data-ocid="settings.add_input"
                 className="flex-1"
               />
               <Button
@@ -487,7 +499,7 @@ export default function App() {
                 onClick={handleAddFriend}
                 variant="outline"
                 className="shrink-0 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth"
-                data-ocid="friends.add_button"
+                data-ocid="settings.add_button"
               >
                 Add
               </Button>
@@ -495,19 +507,30 @@ export default function App() {
             {friendError && (
               <p
                 className="text-xs text-destructive"
-                data-ocid="friends.field_error"
+                data-ocid="settings.field_error"
               >
                 {friendError}
               </p>
             )}
           </div>
 
-          {/* Friends list */}
+          {/* Recipient list */}
           <div className="w-full flex flex-col gap-2">
-            {friends.length === 0 ? (
+            {friendsLoading ? (
+              <>
+                <div
+                  className="flex flex-col gap-2"
+                  data-ocid="settings.loading_state"
+                >
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                  <Skeleton className="h-14 w-3/4 rounded-lg" />
+                </div>
+              </>
+            ) : friends.length === 0 ? (
               <div
                 className="text-center py-10 text-muted-foreground text-sm bg-card border border-border rounded-xl"
-                data-ocid="friends.empty_state"
+                data-ocid="settings.empty_state"
               >
                 <svg
                   width="32"
@@ -537,14 +560,14 @@ export default function App() {
                     strokeLinecap="round"
                   />
                 </svg>
-                No friends yet. Add someone above!
+                No recipients yet. Add someone above!
               </div>
             ) : (
               friends.map((email, i) => (
                 <div
                   key={email}
                   className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 shadow-xs"
-                  data-ocid={`friends.item.${i + 1}`}
+                  data-ocid={`settings.item.${i + 1}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
@@ -561,7 +584,7 @@ export default function App() {
                     onClick={() => removeFriend(email)}
                     className="text-muted-foreground hover:text-destructive transition-smooth shrink-0 ml-2 p-1 rounded-md"
                     aria-label={`Remove ${email}`}
-                    data-ocid={`friends.delete_button.${i + 1}`}
+                    data-ocid={`settings.delete_button.${i + 1}`}
                   >
                     <svg
                       width="16"
@@ -584,7 +607,7 @@ export default function App() {
             )}
           </div>
 
-          {friends.length > 0 && (
+          {!friendsLoading && friends.length > 0 && (
             <Badge variant="secondary" className="text-xs">
               {friends.length}{" "}
               {friends.length === 1 ? "recipient" : "recipients"} configured

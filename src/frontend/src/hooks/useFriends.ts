@@ -1,41 +1,51 @@
+import { createActor } from "@/backend";
 import type { FriendEmail } from "@/types";
-import { useCallback, useState } from "react";
-
-const FRIENDS_KEY = "gmailer_friends";
-
-function loadFriends(): FriendEmail[] {
-  try {
-    const raw = localStorage.getItem(FRIENDS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as FriendEmail[];
-  } catch {
-    return [];
-  }
-}
-
-function saveFriends(friends: FriendEmail[]): void {
-  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends));
-}
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useCallback, useEffect, useState } from "react";
 
 export function useFriends() {
-  const [friends, setFriends] = useState<FriendEmail[]>(loadFriends);
+  const { actor, isFetching } = useActor(createActor);
+  const [friends, setFriends] = useState<FriendEmail[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addFriend = useCallback((email: FriendEmail) => {
-    setFriends((prev) => {
-      if (prev.includes(email)) return prev;
-      const next = [...prev, email];
-      saveFriends(next);
-      return next;
-    });
-  }, []);
+  useEffect(() => {
+    if (isFetching || !actor) return;
+    let cancelled = false;
+    setLoading(true);
+    actor
+      .getFriends()
+      .then((list) => {
+        if (!cancelled) setFriends(list);
+      })
+      .catch(() => {
+        if (!cancelled) setFriends([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [actor, isFetching]);
 
-  const removeFriend = useCallback((email: FriendEmail) => {
-    setFriends((prev) => {
-      const next = prev.filter((e) => e !== email);
-      saveFriends(next);
-      return next;
-    });
-  }, []);
+  const addFriend = useCallback(
+    async (email: FriendEmail) => {
+      if (!actor) return;
+      await actor.addFriend(email);
+      setFriends((prev) => (prev.includes(email) ? prev : [...prev, email]));
+    },
+    [actor],
+  );
 
-  return { friends, addFriend, removeFriend };
+  const removeFriend = useCallback(
+    async (email: FriendEmail) => {
+      if (!actor) return;
+      // Optimistically update UI first for instant feel
+      setFriends((prev) => prev.filter((e) => e !== email));
+      await actor.removeFriend(email);
+    },
+    [actor],
+  );
+
+  return { friends, addFriend, removeFriend, loading };
 }
