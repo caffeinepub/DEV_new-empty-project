@@ -40,57 +40,111 @@ export default function App() {
     view === "oauth" && authStatus === "authenticated" ? "location" : view;
 
   const handleSendNotification = useCallback(async () => {
-    if (!location.trim()) return;
+    const SEND_TAG = "[Gmail Send]";
+    if (!location.trim()) {
+      console.info(
+        `${SEND_TAG} handleSendNotification — location empty, aborting`,
+      );
+      return;
+    }
     setSending(true);
     setSendResult("idle");
     setSendMessage("");
+    console.info(`${SEND_TAG} handleSendNotification — starting send`, {
+      location: location.trim(),
+      expectedRecipients: friends.length,
+      actorReady: !!actor,
+    });
     try {
       if (!actor) {
+        console.error(`${SEND_TAG} actor is null — cannot reach server`);
         setSendResult("error");
         setSendMessage("Unable to reach the server. Please try again.");
         return;
       }
+      console.info(
+        `${SEND_TAG} calling actor.sendArrivalNotification(location, "") — accessToken intentionally empty (backend reads from tokenStore)`,
+        { location: location.trim(), accessToken: "<empty by design>" },
+      );
       const results: SendResult[] = await actor.sendArrivalNotification(
         location.trim(),
         "",
       );
+      const okCount = results.filter((r) => r.__kind__ === "ok").length;
+      const errCount = results.filter((r) => r.__kind__ === "err").length;
+      console.info(`${SEND_TAG} sendArrivalNotification returned`, {
+        totalResults: results.length,
+        ok: okCount,
+        err: errCount,
+        breakdown: results.map((r) => r.__kind__),
+      });
       const errors = results
         .filter(
           (r): r is Extract<SendResult, { __kind__: "err" }> =>
             r.__kind__ === "err",
         )
         .map((r) => r.err);
+      if (errors.length > 0) {
+        console.error(`${SEND_TAG} per-recipient errors`, {
+          errors,
+          errorCount: errors.length,
+        });
+      }
       if (errors.length === 0) {
-        setSendResult("success");
-        setSendMessage(
+        const msg =
           results.length === 1
             ? "Notification sent successfully!"
-            : `Notifications sent successfully to ${results.length} recipients!`,
-        );
+            : `Notifications sent successfully to ${results.length} recipients!`;
+        console.info(`${SEND_TAG} setting success state`, {
+          sendResult: "success",
+          sendMessage: msg,
+        });
+        setSendResult("success");
+        setSendMessage(msg);
         setLocation("");
       } else if (errors.length === results.length) {
-        setSendResult("error");
-        setSendMessage(
-          `Failed to send to all recipients: ${errors.join("; ")}`,
+        const msg = `Failed to send to all recipients: ${errors.join("; ")}`;
+        console.error(
+          `${SEND_TAG} setting error state — all recipients failed`,
+          {
+            sendResult: "error",
+            sendMessage: msg,
+          },
         );
+        setSendResult("error");
+        setSendMessage(msg);
       } else {
+        const okSent = results.length - errors.length;
+        const msg = `Sent to ${okSent} recipient${okSent === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`;
+        console.error(`${SEND_TAG} setting error state — partial failure`, {
+          sendResult: "error",
+          sendMessage: msg,
+          okSent,
+          failed: errors.length,
+        });
         setSendResult("error");
-        const okCount = results.length - errors.length;
-        setSendMessage(
-          `Sent to ${okCount} recipient${okCount === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`,
-        );
+        setSendMessage(msg);
       }
     } catch (e) {
-      setSendResult("error");
-      setSendMessage(
+      const msg =
         e instanceof Error && e.message
           ? `Failed to send: ${e.message}`
-          : "Failed to send. Please try again.",
-      );
+          : "Failed to send. Please try again.";
+      console.error(`${SEND_TAG} sendArrivalNotification threw`, {
+        message: e instanceof Error ? e.message : String(e),
+        error: e,
+        sendResult: "error",
+        sendMessage: msg,
+      });
+      setSendResult("error");
+      setSendMessage(msg);
     } finally {
+      console.info(
+        `${SEND_TAG} handleSendNotification — finished, clearing sending flag`,
+      );
       setSending(false);
     }
-  }, [location, actor]);
+  }, [location, actor, friends.length]);
 
   const handleAddFriend = useCallback(async () => {
     const email = newFriendEmail.trim().toLowerCase();

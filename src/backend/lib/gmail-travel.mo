@@ -4,12 +4,27 @@ import List "mo:core/List";
 import Map "mo:core/Map";
 import Nat8 "mo:core/Nat8";
 import Error "mo:core/Error";
-import Types "../types/gmail-travel";
+import Debug "mo:core/Debug";
+import Char "mo:core/Char";import Types "../types/gmail-travel";
 import { gmail_users_messages_send } "mo:googlemail-client/Apis/UsersApi";
 import { defaultConfig } "mo:googlemail-client/Config";
 import Option "mo:core/Option";
 
 module {
+
+  /// Return the first `n` characters of `t` (or all of `t` if shorter).
+  /// mo:core/Text has no index-based substring; iterate chars instead.
+  func takeChars(t : Text, n : Nat) : Text {
+    var out = "";
+    var i = 0;
+    for (c in t.chars()) {
+      if (i >= n) return out;
+      out #= c.toText();
+      i += 1;
+    };
+    out
+  };
+
 
   /// Build the Gmail OAuth authorization URL with pre-filled email hint
   public func buildOAuthUrl() : Text {
@@ -19,15 +34,38 @@ module {
   /// Return whether a stored access token is present
   public func getAuthStatus(tokenStore : Map.Map<Text, Text>) : Types.AuthStatus {
     switch (tokenStore.get("access_token")) {
-      case (?_) {
+      case (?token) {
+        let tokenLen = token.size();
+        let tokenPrefix = if (tokenLen >= 8) { takeChars(token, 8) } else { token };
         let email = switch (tokenStore.get("email")) {
           case (?e) e;
           case null "ggreif@gmail.com";
         };
+        Debug.print("[Gmail Backend] getAuthStatus — token present (length: " # debug_show(tokenLen) # ", prefix: " # tokenPrefix # ", full token redacted), email: " # email);
         #authenticated { email };
       };
-      case null #notAuthenticated;
+      case null {
+        Debug.print("[Gmail Backend] getAuthStatus — token is NULL in tokenStore → #notAuthenticated");
+        #notAuthenticated;
+      };
     }
+  };
+
+  /// Produce a human-readable description of the stored token + AuthStatus for logging
+  public func describeAuthStatus(tokenStore : Map.Map<Text, Text>, status : Types.AuthStatus) : Text {
+    let tokenDesc = switch (tokenStore.get("access_token")) {
+      case (?token) {
+        let tokenLen = token.size();
+        let tokenPrefix = if (tokenLen >= 8) { takeChars(token, 8) } else { token };
+        "present (length: " # debug_show(tokenLen) # ", prefix: " # tokenPrefix # ", full token redacted)"
+      };
+      case null "NULL (missing)";
+    };
+    let statusDesc = switch (status) {
+      case (#authenticated { email }) "authenticated (email: " # email # ")";
+      case (#notAuthenticated) "notAuthenticated";
+    };
+    "token: " # tokenDesc # ", status: " # statusDesc
   };
 
   /// Add a friend email to the list; return (newList, added)
@@ -81,6 +119,7 @@ module {
     let results = List.empty<Types.SendResult>();
     let cfg = { defaultConfig with auth = ?#bearer accessToken; is_replicated = null };
     for (recipient in recipients.vals()) {
+      Debug.print("[Gmail Backend] sendArrivalEmails — sending to recipient: " # recipient);
       let rfc = "From: " # fromEmail # "\r\nTo: " # recipient # "\r\nSubject: " # subject # "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" # body;
       let rawText = base64UrlEncode(rfc.encodeUtf8());
       let rawBlob = rawText.encodeUtf8();
@@ -97,8 +136,10 @@ module {
       };
       try {
         let _ = await* gmail_users_messages_send(cfg, "me", #_1_, "", #json, "", "", "", "", false, "", "", "", msg);
+        Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #ok (recipient)");
         results.add(#ok recipient);
       } catch (e) {
+        Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #err — exception message: " # e.message());
         results.add(#err (recipient # ": " # e.message()));
       };
     };

@@ -30313,6 +30313,12 @@ const GOOGLE_CLIENT_ID = "776815084452-8t1kcrjouc2pp7c6s2r86k41c6cs5mqd.apps.goo
 const REDIRECT_URI = "https://new-empty-project-lcr.dev.caffeine.xyz";
 const OAUTH_SCOPES = "https://www.googleapis.com/auth/gmail.send";
 const LOGIN_HINT = "ggreif@gmail.com";
+const TAG = "[Gmail OAuth]";
+function redact(token) {
+  if (!token) return "<empty>";
+  const prefix2 = token.slice(0, 8);
+  return `<len=${token.length} prefix=${prefix2}>`;
+}
 function generateState() {
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
@@ -30331,15 +30337,47 @@ function buildOAuthUrl() {
     login_hint: LOGIN_HINT,
     prompt: "consent"
   });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  console.info(`${TAG} buildOAuthUrl — constructed authorization URL`, {
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: "token",
+    scope: OAUTH_SCOPES,
+    state: redact(state),
+    login_hint: LOGIN_HINT,
+    prompt: "consent",
+    url
+  });
+  return url;
 }
 function parseTokenFromFragment() {
   const hash = window.location.hash;
-  if (!hash || hash.length < 2) return null;
+  console.info(`${TAG} parseTokenFromFragment — inspecting URL fragment`, {
+    hashLength: hash ? hash.length : 0,
+    hasHash: !!hash && hash.length >= 2
+  });
+  if (!hash || hash.length < 2) {
+    console.info(
+      `${TAG} parseTokenFromFragment — no fragment present, nothing to parse`
+    );
+    return null;
+  }
   const params = new URLSearchParams(hash.slice(1));
   const accessToken = params.get("access_token");
   const state = params.get("state");
+  const foundToken = !!accessToken;
+  const foundState = !!state;
+  console.info(`${TAG} parseTokenFromFragment — parsed fragment params`, {
+    accessTokenFound: foundToken,
+    accessToken: foundToken ? redact(accessToken) : null,
+    stateFound: foundState,
+    state: foundState ? redact(state) : null
+  });
   if (accessToken && state) return { accessToken, state };
+  console.warn(
+    `${TAG} parseTokenFromFragment — fragment present but missing access_token or state`,
+    { accessTokenFound: foundToken, stateFound: foundState }
+  );
   return null;
 }
 function useAuthStatus() {
@@ -30352,33 +30390,81 @@ function useAuthStatus() {
   const authStatus = authenticated ? "authenticated" : "unauthenticated";
   const oauthUrl = buildOAuthUrl();
   reactExports.useEffect(() => {
+    console.info(`${TAG} useEffect entry — checking for OAuth callback`, {
+      actorReady: !!actor,
+      actor: actor ? "<instance>" : null
+    });
     const result = parseTokenFromFragment();
-    if (!result) return;
+    if (!result) {
+      console.info(`${TAG} useEffect — no token in fragment, exiting`);
+      return;
+    }
     const { accessToken, state } = result;
     const storedState = localStorage.getItem(STATE_KEY);
-    window.history.replaceState(null, "", window.location.pathname);
+    if (!actor) {
+      console.warn(
+        `${TAG} useEffect — actor is null; preserving URL fragment for retry on next render. Token remains in URL.`,
+        { token: redact(accessToken), state: redact(state) }
+      );
+      return;
+    }
     if (state !== storedState) {
+      console.error(
+        `${TAG} useEffect — state mismatch detected (possible CSRF). Aborting.`,
+        {
+          receivedState: redact(state),
+          storedState: storedState ? redact(storedState) : null
+        }
+      );
       setExchangeError(
         "State mismatch — possible CSRF attack. Please try again."
       );
       return;
     }
     localStorage.removeItem(STATE_KEY);
-    if (!actor) return;
     setExchanging(true);
+    console.info(
+      `${TAG} useEffect — sending access token to server via handleOAuthCallback`,
+      {
+        token: redact(accessToken),
+        loginHint: LOGIN_HINT
+      }
+    );
     actor.handleOAuthCallback(accessToken, LOGIN_HINT).then((res) => {
+      console.info(`${TAG} handleOAuthCallback — server responded`, {
+        resultKind: res.__kind__,
+        ...res.__kind__ === "err" ? { err: res.err } : {}
+      });
       if (res.__kind__ === "ok") {
+        console.info(
+          `${TAG} handleOAuthCallback — success; setting localStorage ${AUTH_KEY}=true and marking authenticated`
+        );
         localStorage.setItem(AUTH_KEY, "true");
         setAuthenticated(true);
+        console.info(
+          `${TAG} useEffect — wiping URL fragment (token delivered to server)`
+        );
+        window.history.replaceState(null, "", window.location.pathname);
       } else {
+        console.error(`${TAG} handleOAuthCallback — server returned error`, {
+          err: res.err
+        });
         setExchangeError(`Authentication failed: ${res.err}`);
       }
     }).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error(`${TAG} handleOAuthCallback — promise rejected`, {
+        message: msg,
+        error: err
+      });
       setExchangeError(`Authentication failed: ${msg}`);
     }).finally(() => setExchanging(false));
   }, [actor]);
   const logout = reactExports.useCallback(() => {
+    console.info(
+      `${TAG} logout — clearing localStorage auth flag (note: backend tokenStore is NOT cleared by logout)`,
+      { authKey: AUTH_KEY }
+    );
     localStorage.removeItem(AUTH_KEY);
     setAuthenticated(false);
   }, []);
@@ -30441,50 +30527,102 @@ function App() {
   const [friendError, setFriendError] = reactExports.useState("");
   const effectiveView = view === "oauth" && authStatus === "authenticated" ? "location" : view;
   const handleSendNotification = reactExports.useCallback(async () => {
-    if (!location2.trim()) return;
+    const SEND_TAG = "[Gmail Send]";
+    if (!location2.trim()) {
+      console.info(
+        `${SEND_TAG} handleSendNotification — location empty, aborting`
+      );
+      return;
+    }
     setSending(true);
     setSendResult("idle");
     setSendMessage("");
+    console.info(`${SEND_TAG} handleSendNotification — starting send`, {
+      location: location2.trim(),
+      expectedRecipients: friends.length,
+      actorReady: !!actor
+    });
     try {
       if (!actor) {
+        console.error(`${SEND_TAG} actor is null — cannot reach server`);
         setSendResult("error");
         setSendMessage("Unable to reach the server. Please try again.");
         return;
       }
+      console.info(
+        `${SEND_TAG} calling actor.sendArrivalNotification(location, "") — accessToken intentionally empty (backend reads from tokenStore)`,
+        { location: location2.trim(), accessToken: "<empty by design>" }
+      );
       const results = await actor.sendArrivalNotification(
         location2.trim(),
         ""
       );
+      const okCount = results.filter((r2) => r2.__kind__ === "ok").length;
+      const errCount = results.filter((r2) => r2.__kind__ === "err").length;
+      console.info(`${SEND_TAG} sendArrivalNotification returned`, {
+        totalResults: results.length,
+        ok: okCount,
+        err: errCount,
+        breakdown: results.map((r2) => r2.__kind__)
+      });
       const errors = results.filter(
         (r2) => r2.__kind__ === "err"
       ).map((r2) => r2.err);
+      if (errors.length > 0) {
+        console.error(`${SEND_TAG} per-recipient errors`, {
+          errors,
+          errorCount: errors.length
+        });
+      }
       if (errors.length === 0) {
+        const msg = results.length === 1 ? "Notification sent successfully!" : `Notifications sent successfully to ${results.length} recipients!`;
+        console.info(`${SEND_TAG} setting success state`, {
+          sendResult: "success",
+          sendMessage: msg
+        });
         setSendResult("success");
-        setSendMessage(
-          results.length === 1 ? "Notification sent successfully!" : `Notifications sent successfully to ${results.length} recipients!`
-        );
+        setSendMessage(msg);
         setLocation("");
       } else if (errors.length === results.length) {
-        setSendResult("error");
-        setSendMessage(
-          `Failed to send to all recipients: ${errors.join("; ")}`
+        const msg = `Failed to send to all recipients: ${errors.join("; ")}`;
+        console.error(
+          `${SEND_TAG} setting error state — all recipients failed`,
+          {
+            sendResult: "error",
+            sendMessage: msg
+          }
         );
+        setSendResult("error");
+        setSendMessage(msg);
       } else {
+        const okSent = results.length - errors.length;
+        const msg = `Sent to ${okSent} recipient${okSent === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`;
+        console.error(`${SEND_TAG} setting error state — partial failure`, {
+          sendResult: "error",
+          sendMessage: msg,
+          okSent,
+          failed: errors.length
+        });
         setSendResult("error");
-        const okCount = results.length - errors.length;
-        setSendMessage(
-          `Sent to ${okCount} recipient${okCount === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`
-        );
+        setSendMessage(msg);
       }
     } catch (e) {
+      const msg = e instanceof Error && e.message ? `Failed to send: ${e.message}` : "Failed to send. Please try again.";
+      console.error(`${SEND_TAG} sendArrivalNotification threw`, {
+        message: e instanceof Error ? e.message : String(e),
+        error: e,
+        sendResult: "error",
+        sendMessage: msg
+      });
       setSendResult("error");
-      setSendMessage(
-        e instanceof Error && e.message ? `Failed to send: ${e.message}` : "Failed to send. Please try again."
-      );
+      setSendMessage(msg);
     } finally {
+      console.info(
+        `${SEND_TAG} handleSendNotification — finished, clearing sending flag`
+      );
       setSending(false);
     }
-  }, [location2, actor]);
+  }, [location2, actor, friends.length]);
   const handleAddFriend = reactExports.useCallback(async () => {
     const email = newFriendEmail.trim().toLowerCase();
     if (!email) return;
