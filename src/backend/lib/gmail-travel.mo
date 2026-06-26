@@ -2,6 +2,7 @@ import Text "mo:core/Text";
 import Blob "mo:core/Blob";
 import List "mo:core/List";
 import Map "mo:core/Map";
+import Nat8 "mo:core/Nat8";
 import Error "mo:core/Error";
 import Types "../types/gmail-travel";
 import { gmail_users_messages_send } "mo:googlemail-client/Apis/UsersApi";
@@ -12,7 +13,7 @@ module {
 
   /// Build the Gmail OAuth authorization URL with pre-filled email hint
   public func buildOAuthUrl() : Text {
-    "https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=REPLACE_WITH_CLIENT_ID&redirect_uri=REPLACE_WITH_REDIRECT_URI&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.send&login_hint=ggreif%40gmail.com"
+    "https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=776815084452-57d5mm927nf70ea4qhuomtuhggges3tj.apps.googleusercontent.com&redirect_uri=REPLACE_WITH_REDIRECT_URI&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.send&login_hint=ggreif%40gmail.com"
   };
 
   /// Return whether a stored access token is present
@@ -56,9 +57,9 @@ module {
     var i = 0;
     let n = bytes.size();
     while (i < n) {
-      let b0 = (bytes[i] : Nat8).toNat();
-      let b1 = if (i + 1 < n) (bytes[i + 1] : Nat8).toNat() else 0;
-      let b2 = if (i + 2 < n) (bytes[i + 2] : Nat8).toNat() else 0;
+      let b0 = bytes[i].toNat();
+      let b1 = if (i + 1 < n) bytes[i + 1].toNat() else 0;
+      let b2 = if (i + 2 < n) bytes[i + 2].toNat() else 0;
       out #= Text.fromChar(chars[(b0 / 4) % 64]);
       out #= Text.fromChar(chars[((b0 % 4) * 16 + b1 / 16) % 64]);
       if (i + 1 < n) out #= Text.fromChar(chars[((b1 % 16) * 4 + b2 / 64) % 64]);

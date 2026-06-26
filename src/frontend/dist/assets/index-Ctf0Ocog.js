@@ -30299,7 +30299,7 @@ function Input({ className, type, ...props }) {
 }
 const AUTH_KEY = "gmailer_authenticated";
 const STATE_KEY = "gmailer_oauth_state";
-const GOOGLE_CLIENT_ID = "";
+const GOOGLE_CLIENT_ID = "776815084452-57d5mm927nf70ea4qhuomtuhggges3tj.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = "";
 const REDIRECT_URI = "http://localhost";
 const OAUTH_SCOPES = "https://www.googleapis.com/auth/gmail.send";
