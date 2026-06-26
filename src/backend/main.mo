@@ -39,10 +39,25 @@ persistent actor Main {
   };
 
   public func sendArrivalNotification(place : Text, accessToken : Text) : async [T.SendResult] {
-    let fromEmail = switch (tokenStore.get("email")) {
-      case (?e) e;
-      case null "ggreif@gmail.com";
-    };
-    await* Lib.sendArrivalEmails(accessToken, fromEmail, friends.toArray(), place)
+    ignore accessToken; // signature kept for frontend compatibility; token is read from tokenStore
+    let storedToken = tokenStore.get("access_token");
+    switch (storedToken) {
+      case (?token) {
+        let fromEmail = switch (tokenStore.get("email")) {
+          case (?e) e;
+          case null "ggreif@gmail.com";
+        };
+        await* Lib.sendArrivalEmails(token, fromEmail, friends.toArray(), place)
+      };
+      case null {
+        // Not authenticated — report a clear error per recipient instead of sending with an empty token
+        let recipients = friends.toArray();
+        let results = List.empty<T.SendResult>();
+        for (recipient in recipients.vals()) {
+          results.add(#err (recipient # ": Not authenticated — connect Gmail first"));
+        };
+        results.toArray()
+      };
+    }
   };
 };

@@ -30458,22 +30458,50 @@ function App() {
   const [sendResult, setSendResult] = reactExports.useState(
     "idle"
   );
+  const [sendMessage, setSendMessage] = reactExports.useState("");
   const [friendError, setFriendError] = reactExports.useState("");
   const effectiveView = view === "oauth" && authStatus === "authenticated" ? "location" : view;
   const handleSendNotification = reactExports.useCallback(async () => {
     if (!location2.trim()) return;
     setSending(true);
     setSendResult("idle");
+    setSendMessage("");
     try {
       if (!actor) {
         setSendResult("error");
+        setSendMessage("Unable to reach the server. Please try again.");
         return;
       }
-      await actor.sendArrivalNotification(location2.trim(), "");
-      setSendResult("success");
-      setLocation("");
-    } catch {
+      const results = await actor.sendArrivalNotification(
+        location2.trim(),
+        ""
+      );
+      const errors = results.filter(
+        (r2) => r2.__kind__ === "err"
+      ).map((r2) => r2.err);
+      if (errors.length === 0) {
+        setSendResult("success");
+        setSendMessage(
+          results.length === 1 ? "Notification sent successfully!" : `Notifications sent successfully to ${results.length} recipients!`
+        );
+        setLocation("");
+      } else if (errors.length === results.length) {
+        setSendResult("error");
+        setSendMessage(
+          `Failed to send to all recipients: ${errors.join("; ")}`
+        );
+      } else {
+        setSendResult("error");
+        const okCount = results.length - errors.length;
+        setSendMessage(
+          `Sent to ${okCount} recipient${okCount === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`
+        );
+      }
+    } catch (e) {
       setSendResult("error");
+      setSendMessage(
+        e instanceof Error && e.message ? `Failed to send: ${e.message}` : "Failed to send. Please try again."
+      );
     } finally {
       setSending(false);
     }
@@ -30928,7 +30956,7 @@ function App() {
         sendResult === "success" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
-            className: "flex items-center gap-2 text-sm text-primary bg-primary/8 rounded-lg px-3 py-2",
+            className: "flex items-start gap-2 text-sm text-primary bg-primary/8 rounded-lg px-3 py-2",
             "data-ocid": "location.success_state",
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -30939,6 +30967,7 @@ function App() {
                   viewBox: "0 0 24 24",
                   fill: "none",
                   "aria-hidden": "true",
+                  className: "shrink-0 mt-0.5",
                   children: /* @__PURE__ */ jsxRuntimeExports.jsx(
                     "path",
                     {
@@ -30951,16 +30980,50 @@ function App() {
                   )
                 }
               ),
-              "Notifications sent successfully!"
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "break-words", children: sendMessage })
             ]
           }
         ),
-        sendResult === "error" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        sendResult === "error" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
-            className: "flex items-center gap-2 text-sm text-destructive bg-destructive/8 rounded-lg px-3 py-2",
+            className: "flex items-start gap-2 text-sm text-destructive bg-destructive/8 rounded-lg px-3 py-2",
             "data-ocid": "location.error_state",
-            children: "Failed to send. Please try again."
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "svg",
+                {
+                  width: "16",
+                  height: "16",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  "aria-hidden": "true",
+                  className: "shrink-0 mt-0.5",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "circle",
+                      {
+                        cx: "12",
+                        cy: "12",
+                        r: "10",
+                        stroke: "currentColor",
+                        strokeWidth: "2"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "path",
+                      {
+                        d: "M12 8v4M12 16h.01",
+                        stroke: "currentColor",
+                        strokeWidth: "2",
+                        strokeLinecap: "round"
+                      }
+                    )
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "break-words", children: sendMessage })
+            ]
           }
         )
       ] }),

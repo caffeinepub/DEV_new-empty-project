@@ -79,7 +79,7 @@ module {
     let subject = "Travel Update from Gabor";
     let body = "Gabor arrived in " # place;
     let results = List.empty<Types.SendResult>();
-    let cfg = { defaultConfig with auth = ?#bearer accessToken };
+    let cfg = { defaultConfig with auth = ?#bearer accessToken; is_replicated = null };
     for (recipient in recipients.vals()) {
       let rfc = "From: " # fromEmail # "\r\nTo: " # recipient # "\r\nSubject: " # subject # "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" # body;
       let rawText = base64UrlEncode(rfc.encodeUtf8());

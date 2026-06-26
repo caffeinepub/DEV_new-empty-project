@@ -1,4 +1,5 @@
 import { createActor } from "@/backend";
+import type { SendResult } from "@/backend";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export default function App() {
   const [sendResult, setSendResult] = useState<"idle" | "success" | "error">(
     "idle",
   );
+  const [sendMessage, setSendMessage] = useState("");
   const [friendError, setFriendError] = useState("");
 
   // The location/Send view is the default landing view and is always reachable
@@ -41,16 +43,50 @@ export default function App() {
     if (!location.trim()) return;
     setSending(true);
     setSendResult("idle");
+    setSendMessage("");
     try {
       if (!actor) {
         setSendResult("error");
+        setSendMessage("Unable to reach the server. Please try again.");
         return;
       }
-      await actor.sendArrivalNotification(location.trim(), "");
-      setSendResult("success");
-      setLocation("");
-    } catch {
+      const results: SendResult[] = await actor.sendArrivalNotification(
+        location.trim(),
+        "",
+      );
+      const errors = results
+        .filter(
+          (r): r is Extract<SendResult, { __kind__: "err" }> =>
+            r.__kind__ === "err",
+        )
+        .map((r) => r.err);
+      if (errors.length === 0) {
+        setSendResult("success");
+        setSendMessage(
+          results.length === 1
+            ? "Notification sent successfully!"
+            : `Notifications sent successfully to ${results.length} recipients!`,
+        );
+        setLocation("");
+      } else if (errors.length === results.length) {
+        setSendResult("error");
+        setSendMessage(
+          `Failed to send to all recipients: ${errors.join("; ")}`,
+        );
+      } else {
+        setSendResult("error");
+        const okCount = results.length - errors.length;
+        setSendMessage(
+          `Sent to ${okCount} recipient${okCount === 1 ? "" : "s"}, but failed to send to ${errors.length}: ${errors.join("; ")}`,
+        );
+      }
+    } catch (e) {
       setSendResult("error");
+      setSendMessage(
+        e instanceof Error && e.message
+          ? `Failed to send: ${e.message}`
+          : "Failed to send. Please try again.",
+      );
     } finally {
       setSending(false);
     }
@@ -465,7 +501,7 @@ export default function App() {
 
             {sendResult === "success" && (
               <div
-                className="flex items-center gap-2 text-sm text-primary bg-primary/8 rounded-lg px-3 py-2"
+                className="flex items-start gap-2 text-sm text-primary bg-primary/8 rounded-lg px-3 py-2"
                 data-ocid="location.success_state"
               >
                 <svg
@@ -474,6 +510,7 @@ export default function App() {
                   viewBox="0 0 24 24"
                   fill="none"
                   aria-hidden="true"
+                  className="shrink-0 mt-0.5"
                 >
                   <path
                     d="M20 6L9 17l-5-5"
@@ -483,15 +520,37 @@ export default function App() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                Notifications sent successfully!
+                <span className="break-words">{sendMessage}</span>
               </div>
             )}
             {sendResult === "error" && (
               <div
-                className="flex items-center gap-2 text-sm text-destructive bg-destructive/8 rounded-lg px-3 py-2"
+                className="flex items-start gap-2 text-sm text-destructive bg-destructive/8 rounded-lg px-3 py-2"
                 data-ocid="location.error_state"
               >
-                Failed to send. Please try again.
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0 mt-0.5"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M12 8v4M12 16h.01"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="break-words">{sendMessage}</span>
               </div>
             )}
           </div>
