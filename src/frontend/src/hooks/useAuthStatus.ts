@@ -7,11 +7,9 @@ const AUTH_KEY = "gmailer_authenticated";
 const STATE_KEY = "gmailer_oauth_state";
 const GOOGLE_CLIENT_ID =
   "776815084452-8t1kcrjouc2pp7c6s2r86k41c6cs5mqd.apps.googleusercontent.com";
-const GOOGLE_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? "";
 const REDIRECT_URI = "https://new-empty-project-lcr.dev.caffeine.xyz";
 const OAUTH_SCOPES = "https://www.googleapis.com/auth/gmail.send";
 const LOGIN_HINT = "ggreif@gmail.com";
-const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 function generateState(): string {
   const arr = new Uint8Array(16);
@@ -26,8 +24,7 @@ function buildOAuthUrl(): string {
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
-    response_type: "code",
-    access_type: "offline",
+    response_type: "token",
     scope: OAUTH_SCOPES,
     state,
     login_hint: LOGIN_HINT,
@@ -36,11 +33,16 @@ function buildOAuthUrl(): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-function parseCodeFromQuery(): { code: string; state: string } | null {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
+function parseTokenFromFragment(): {
+  accessToken: string;
+  state: string;
+} | null {
+  const hash = window.location.hash;
+  if (!hash || hash.length < 2) return null;
+  const params = new URLSearchParams(hash.slice(1));
+  const accessToken = params.get("access_token");
   const state = params.get("state");
-  if (code && state) return { code, state };
+  if (accessToken && state) return { accessToken, state };
   return null;
 }
 
@@ -58,15 +60,15 @@ export function useAuthStatus() {
     : "unauthenticated";
   const oauthUrl = buildOAuthUrl();
 
-  // Handle authorization code callback
+  // Handle implicit-flow callback: access_token arrives in the URL fragment.
   useEffect(() => {
-    const result = parseCodeFromQuery();
+    const result = parseTokenFromFragment();
     if (!result) return;
 
-    const { code, state } = result;
+    const { accessToken, state } = result;
     const storedState = localStorage.getItem(STATE_KEY);
 
-    // Clean up query params from URL immediately
+    // Clean up the fragment from the URL immediately.
     window.history.replaceState(null, "", window.location.pathname);
 
     if (state !== storedState) {
@@ -82,35 +84,8 @@ export function useAuthStatus() {
 
     setExchanging(true);
 
-    // Exchange the authorization code for a real access token in the frontend.
-    // This is the standard approach for SPAs with a Web application OAuth client.
-    fetch(TOKEN_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: REDIRECT_URI,
-        grant_type: "authorization_code",
-      }).toString(),
-    })
-      .then(async (resp) => {
-        if (!resp.ok) {
-          const errBody = await resp.text();
-          throw new Error(`Token exchange failed: ${errBody}`);
-        }
-        return resp.json() as Promise<{
-          access_token: string;
-          refresh_token?: string;
-          expires_in?: number;
-        }>;
-      })
-      .then((tokenData) => {
-        const { access_token } = tokenData;
-        if (!access_token) throw new Error("No access_token in response");
-        return actor.handleOAuthCallback(access_token, LOGIN_HINT);
-      })
+    actor
+      .handleOAuthCallback(accessToken, LOGIN_HINT)
       .then((res) => {
         if (res.__kind__ === "ok") {
           localStorage.setItem(AUTH_KEY, "true");
