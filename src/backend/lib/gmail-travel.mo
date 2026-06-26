@@ -2,12 +2,13 @@ import Text "mo:core/Text";
 import Blob "mo:core/Blob";
 import List "mo:core/List";
 import Map "mo:core/Map";
+import Nat8 "mo:core/Nat8";
 import Error "mo:core/Error";
 import Debug "mo:core/Debug";
-import Char "mo:core/Char";
-import Types "../types/gmail-travel";
-import Call "mo:ic/Call";
-import { type HttpRequestArgs; type HttpRequestResult; type HttpHeader } "mo:ic/Types";
+import Char "mo:core/Char";import Types "../types/gmail-travel";
+import { gmail_users_messages_send } "mo:googlemail-client/Apis/UsersApi";
+import { defaultConfig } "mo:googlemail-client/Config";
+import Option "mo:core/Option";
 
 module {
 
@@ -85,10 +86,8 @@ module {
     (filtered, filtered.size() < before)
   };
 
-  /// Base64url-encode a Blob using the URL-safe alphabet (- and _) with no
-  /// padding. The output contains only `[A-Za-z0-9\-_]` so it is safe to embed
-  /// directly inside a JSON string literal without further escaping.
-  func base64UrlEncode(data : Blob) : Text {
+  /// Base64url-encode a Blob (currently unused — googlemail-client accepts raw Blob)
+  func _base64UrlEncode(data : Blob) : Text {
     let bytes = data.toArray();
     let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     let chars = alphabet.toArray();
@@ -108,20 +107,7 @@ module {
     out
   };
 
-  /// Send "Gabor arrived in <place>" to all friends.
-  ///
-  /// This bypasses `googlemail-client`'s `gmail_users_messages_send` because
-  /// that function builds the HTTP request body by Candid-encoding the `Message`
-  /// record (whose `raw` field is `?Blob`) and then JSON-serializing it via
-  /// `mo:serde-core`. `serde-core`'s JSON serializer cannot encode `#Blob`, so
-  /// `JSON.fromCandid` returns `#err` and the package throws
-  /// `"Failed to serialize body to JSON"` for every recipient.
-  ///
-  /// Instead we call the IC management canister's `http_request` directly (via
-  /// the `mo:ic/Call` wrapper, which attaches the required outcall cycles
-  /// internally) with a hand-built JSON body `{"raw":"<base64url>"}`. The
-  /// `raw` value is the base64url-encoded RFC822 message, which is exactly what
-  /// the Gmail API `users.messages.send` endpoint expects.
+  /// Send "Gabor arrived in <place>" to all friends using googlemail-client
   public func sendArrivalEmails(
     accessToken : Text,
     fromEmail : Text,
@@ -131,40 +117,26 @@ module {
     let subject = "Travel Update from Gabor";
     let body = "Gabor arrived in " # place;
     let results = List.empty<Types.SendResult>();
-    let url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
-    let headers : [HttpHeader] = [
-      { name = "Authorization"; value = "Bearer " # accessToken },
-      { name = "Content-Type"; value = "application/json; charset=utf-8" },
-    ];
+    let cfg = { defaultConfig with auth = ?#bearer accessToken; is_replicated = null };
     for (recipient in recipients.vals()) {
       Debug.print("[Gmail Backend] sendArrivalEmails — sending to recipient: " # recipient);
       let rfc = "From: " # fromEmail # "\r\nTo: " # recipient # "\r\nSubject: " # subject # "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" # body;
-      let rawB64 = base64UrlEncode(rfc.encodeUtf8());
-      // base64url alphabet is JSON-safe (no quotes/backslashes/control chars),
-      // so no escaping is required inside the JSON string literal.
-      let jsonBody = "{\"raw\":\"" # rawB64 # "\"}";
-      let request : HttpRequestArgs = {
-        url;
-        method = #post;
-        headers;
-        body = ?(jsonBody.encodeUtf8());
-        max_response_bytes = ?2_000_000;
-        transform = null;
-        is_replicated = null;
+      let rawBlob = rfc.encodeUtf8();
+      let msg = {
+        id = null;
+        threadId = null;
+        labelIds = null;
+        snippet = null;
+        historyId = null;
+        internalDate = null;
+        payload = null;
+        sizeEstimate = null;
+        raw = ?rawBlob;
       };
       try {
-        let response : HttpRequestResult = await Call.httpRequest(request);
-        if (response.status >= 200 and response.status < 300) {
-          Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #ok (HTTP " # debug_show(response.status) # ")");
-          results.add(#ok recipient);
-        } else {
-          let bodyText = switch (response.body.decodeUtf8()) {
-            case (?t) t;
-            case null "(undecodable)";
-          };
-          Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #err — HTTP " # debug_show(response.status) # " " # bodyText);
-          results.add(#err (recipient # ": HTTP " # debug_show(response.status) # " " # bodyText));
-        };
+        let _ = await* gmail_users_messages_send(cfg, "me", #_1_, "", #json, "", "", "", "", false, "", "", "", msg);
+        Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #ok (recipient)");
+        results.add(#ok recipient);
       } catch (e) {
         Debug.print("[Gmail Backend] sendArrivalEmails — result for " # recipient # ": #err — exception message: " # e.message());
         results.add(#err (recipient # ": " # e.message()));

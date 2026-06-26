@@ -1,9 +1,9 @@
 {
   "version": 3,
-  "mopsTomlDepsHash": "72a29391b39e67806f27d27b486d5ecc794285a14e65cc65c20981a2596c15e8",
+  "mopsTomlDepsHash": "f2b56433e92b9f95e2324b4a095d6b38292c3ef8e657b1b8b5f4b0bcecb21a73",
   "deps": {
     "core": "2.5.0",
-    "googlemail-client": "0.1.0",
+    "googlemail-client": "0.1.2",
     "serde-core": "0.1.4",
     "base@0.16": "0.16.0",
     "itertools@0.2.2": "0.2.2",
@@ -18,7 +18,7 @@
     "sha2@0.1": "0.1.14",
     "byte-utils@0.2": "0.2.0",
     "core@2.4": "2.4.0",
-    "ic": "4.1.0",
+    "ic": "4.0.0",
     "cbor@4.1.0": "4.1.0",
     "xtended-numbers": "2.3.0",
     "sha2@0.1.6": "0.1.6"
@@ -83,24 +83,24 @@
       "core@2.5.0/src/pure/RealTimeQueue.mo": "af133ae61c69ce4e00db5e9db53ddeccad84373fef82a156c85360c2426349dd",
       "core@2.5.0/src/pure/Set.mo": "f0155b1d548cbc8889fcff75ef52f0cab7998b034621e4faac8d3b79d7bbac07"
     },
-    "googlemail-client@0.1.0": {
-      "googlemail-client@0.1.0/SKILL.md": "921bdfc87f49f2e26196fa2b37bf658963ed0adaed1acfdbe370b272eb72a584",
-      "googlemail-client@0.1.0/src/Models/Draft.mo": "09802bbc3f48d844bd8764dd176589657d8fca9fcbdc0c23ccdb9b5cc3b4fa9e",
-      "googlemail-client@0.1.0/src/Config.mo": "4c62db324cbd4546bac1c07aeaf826dcc80418664a38801e4c2e30b6606d6edc",
-      "googlemail-client@0.1.0/LICENSE": "4210c16a06684c7fc6698ee9de003a5fec8774f3060f9b5784270260e1d92ccd",
-      "googlemail-client@0.1.0/mops.toml": "04b09147955c67e6f12586fcafb98aa92cc21e38cfa6c5109e4ce99624cfe091",
-      "googlemail-client@0.1.0/README.md": "efaf1d6d722fe40da2a962a3d20c6ae1eda499ab7a7d23fce3a9a66577493f8a",
-      "googlemail-client@0.1.0/src/Apis/UsersApi.mo": "1b852cfd10759f98d7a614867c682efd053510ce0d3d0e78f1f67712ac4f4059",
-      "googlemail-client@0.1.0/src/Models/GmailUsersDraftsListAltParameter.mo": "a7bb03a21b678a1fc5c063c8ad851ad6dc87350265065e6a35479a36b0627a9b",
-      "googlemail-client@0.1.0/src/Models/MessagePartBody.mo": "b8a5791096a310dff6d943fa07ea29d4794402088345d39cbaf6d40ab39d0aee",
-      "googlemail-client@0.1.0/src/Models/Message.mo": "210f0457ff958179248398b34662be2976ca737ee8d10c88f44f44b29dd9f10f",
-      "googlemail-client@0.1.0/src/Models/ListDraftsResponse.mo": "6f50c12647195a25291df06e80381561618467cc7894ca82e41edd86c8e267ea",
-      "googlemail-client@0.1.0/src/Models/GmailUsersDraftsListXgafvParameter.mo": "4909f951dd19f90e06a27782d1c94023c811b03597092c5706c28ce7b44fa8d4",
-      "googlemail-client@0.1.0/src/Models/ListMessagesResponse.mo": "ce7e3babffe0e0b1b40642dea81d79afe3ae76c7c8692ed608f7cd7e3184a610",
-      "googlemail-client@0.1.0/src/Models/GmailUsersDraftsGetFormatParameter.mo": "4e9691001f4e8082a8d26bffd8109b647747004b8fb01f89e06dd6ab4aab5509",
-      "googlemail-client@0.1.0/src/Models/MessagePart.mo": "1aaecef6c02289fbb2faeb556f04e4eda8f76b47d39f5048211260ed6efeb2c2",
-      "googlemail-client@0.1.0/src/Models/MessagePartHeader.mo": "c8d814725b259ab06178b35b243234f33b62054cab3f3bba3e1602008b9ff4e0",
-      "googlemail-client@0.1.0/src/Models/Profile.mo": "4ad4cbf55ed593736791c57a3d4269d0361100cdf369c70424f45337354170cb"
+    "googlemail-client@0.1.2": {
+      "googlemail-client@0.1.2/src/Models/Draft.mo": "09802bbc3f48d844bd8764dd176589657d8fca9fcbdc0c23ccdb9b5cc3b4fa9e",
+      "googlemail-client@0.1.2/src/Config.mo": "4c62db324cbd4546bac1c07aeaf826dcc80418664a38801e4c2e30b6606d6edc",
+      "googlemail-client@0.1.2/src/Apis/UsersApi.mo": "d6e52da9534bc7186c2c2b75c72963dd81f5dea787cbb3fdf777b6cc095aac95",
+      "googlemail-client@0.1.2/README.md": "efaf1d6d722fe40da2a962a3d20c6ae1eda499ab7a7d23fce3a9a66577493f8a",
+      "googlemail-client@0.1.2/mops.toml": "d47dd157f0f6289231b7c7a3f86b1cf18acf2cac9c9da8fa8ad7ffe3cc41f0c0",
+      "googlemail-client@0.1.2/LICENSE": "4210c16a06684c7fc6698ee9de003a5fec8774f3060f9b5784270260e1d92ccd",
+      "googlemail-client@0.1.2/SKILL.md": "0739ad024a0df4d233cb2e1527e0dc2c439747aefe155390b3cc768e128bdd76",
+      "googlemail-client@0.1.2/src/Models/GmailUsersDraftsListXgafvParameter.mo": "4909f951dd19f90e06a27782d1c94023c811b03597092c5706c28ce7b44fa8d4",
+      "googlemail-client@0.1.2/src/Models/GmailUsersDraftsListAltParameter.mo": "a7bb03a21b678a1fc5c063c8ad851ad6dc87350265065e6a35479a36b0627a9b",
+      "googlemail-client@0.1.2/src/Models/ListDraftsResponse.mo": "6f50c12647195a25291df06e80381561618467cc7894ca82e41edd86c8e267ea",
+      "googlemail-client@0.1.2/src/Models/GmailUsersDraftsGetFormatParameter.mo": "4e9691001f4e8082a8d26bffd8109b647747004b8fb01f89e06dd6ab4aab5509",
+      "googlemail-client@0.1.2/src/Models/ListMessagesResponse.mo": "ce7e3babffe0e0b1b40642dea81d79afe3ae76c7c8692ed608f7cd7e3184a610",
+      "googlemail-client@0.1.2/src/Models/MessagePart.mo": "1aaecef6c02289fbb2faeb556f04e4eda8f76b47d39f5048211260ed6efeb2c2",
+      "googlemail-client@0.1.2/src/Models/Message.mo": "cf7a8b0484d0945241b396d11592b228337506170085283d84e30e0521b4e91c",
+      "googlemail-client@0.1.2/src/Models/MessagePartBody.mo": "beb5f65d6dcfb355b82f0269788b303b730aad27dac60b34aedc9225f9c9176d",
+      "googlemail-client@0.1.2/src/Models/Profile.mo": "4ad4cbf55ed593736791c57a3d4269d0361100cdf369c70424f45337354170cb",
+      "googlemail-client@0.1.2/src/Models/MessagePartHeader.mo": "c8d814725b259ab06178b35b243234f33b62054cab3f3bba3e1602008b9ff4e0"
     },
     "serde-core@0.1.4": {
       "serde-core@0.1.4/mops.toml": "30bffd16436b09fc0cd997998b3c8aad79459009d84d857f7694c5053f919fa6",
@@ -410,13 +410,13 @@
       "core@2.4.0/src/pure/RealTimeQueue.mo": "af133ae61c69ce4e00db5e9db53ddeccad84373fef82a156c85360c2426349dd",
       "core@2.4.0/src/pure/Set.mo": "f0155b1d548cbc8889fcff75ef52f0cab7998b034621e4faac8d3b79d7bbac07"
     },
-    "ic@4.1.0": {
-      "ic@4.1.0/src/lib.mo": "9d9ec84a85eb25d191c1cae99cb841d9b6e0cf0f9bc27c3f3805ac9673d7bef1",
-      "ic@4.1.0/README.md": "4aacc06321244e54f741e9d826f3d374144a4b32372cb58dddaedcaad2e12bc3",
-      "ic@4.1.0/mops.toml": "6625a51f095a9a2a7d664043ba41ff689bef7b745df7c1c467123a7c46f38613",
-      "ic@4.1.0/LICENSE": "ec415b57f8143746b567c94bfad243f5342f3edf110c94641a1a60e02722db55",
-      "ic@4.1.0/src/Call.mo": "b4a3572e5617d0b1eb696450344b65e99504f844794e7ddf1cff664fcfeb2994",
-      "ic@4.1.0/src/Types.mo": "3d84a78df0014676caf7b6afa149c8615c2349f248f668fb7b8c7468f02f080a"
+    "ic@4.0.0": {
+      "ic@4.0.0/README.md": "7686aefce0c535d18ee2768e98660575563daa53b00d2c1041170032c232784c",
+      "ic@4.0.0/mops.toml": "7a6bb3d74b1ec5539b9bb88e0a0a0ba09e8c46e00b38cb5feda009d6b80723df",
+      "ic@4.0.0/src/Call.mo": "b4a3572e5617d0b1eb696450344b65e99504f844794e7ddf1cff664fcfeb2994",
+      "ic@4.0.0/src/lib.mo": "9d9ec84a85eb25d191c1cae99cb841d9b6e0cf0f9bc27c3f3805ac9673d7bef1",
+      "ic@4.0.0/LICENSE": "ec415b57f8143746b567c94bfad243f5342f3edf110c94641a1a60e02722db55",
+      "ic@4.0.0/src/Types.mo": "373c3a18e072058aecaaec99385a08f95746c7e86cc9694f9f23caa982c2ad6c"
     },
     "sha2@0.1.6": {
       "sha2@0.1.6/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
