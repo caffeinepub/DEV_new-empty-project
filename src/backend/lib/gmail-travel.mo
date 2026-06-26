@@ -117,7 +117,7 @@ module {
     let subject = "Travel Update from Gabor";
     let body = "Gabor arrived in " # place;
     let results = List.empty<Types.SendResult>();
-    let cfg = { defaultConfig with auth = ?#bearer accessToken; is_replicated = null };
+    let cfg = { defaultConfig with auth = ?#bearer accessToken; is_replicated = ?false };
     for (recipient in recipients.vals()) {
       Debug.print("[Gmail Backend] sendArrivalEmails — sending to recipient: " # recipient);
       let rfc = "From: " # fromEmail # "\r\nTo: " # recipient # "\r\nSubject: " # subject # "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" # body;
