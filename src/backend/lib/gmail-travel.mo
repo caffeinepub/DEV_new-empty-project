@@ -86,8 +86,8 @@ module {
     (filtered, filtered.size() < before)
   };
 
-  /// Base64url-encode a Blob
-  func base64UrlEncode(data : Blob) : Text {
+  /// Base64url-encode a Blob (currently unused — googlemail-client accepts raw Blob)
+  func _base64UrlEncode(data : Blob) : Text {
     let bytes = data.toArray();
     let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     let chars = alphabet.toArray();
@@ -121,8 +121,7 @@ module {
     for (recipient in recipients.vals()) {
       Debug.print("[Gmail Backend] sendArrivalEmails — sending to recipient: " # recipient);
       let rfc = "From: " # fromEmail # "\r\nTo: " # recipient # "\r\nSubject: " # subject # "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" # body;
-      let rawText = base64UrlEncode(rfc.encodeUtf8());
-      let rawBlob = rawText.encodeUtf8();
+      let rawBlob = rfc.encodeUtf8();
       let msg = {
         id = null;
         threadId = null;
@@ -132,7 +131,7 @@ module {
         internalDate = null;
         payload = null;
         sizeEstimate = null;
-        raw = ?(rawBlob);
+        raw = ?rawBlob;
       };
       try {
         let _ = await* gmail_users_messages_send(cfg, "me", #_1_, "", #json, "", "", "", "", false, "", "", "", msg);
