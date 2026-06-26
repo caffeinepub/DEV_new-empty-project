@@ -13,7 +13,7 @@ module {
 
   /// Build the Gmail OAuth authorization URL with pre-filled email hint
   public func buildOAuthUrl() : Text {
-    "https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=776815084452-57d5mm927nf70ea4qhuomtuhggges3tj.apps.googleusercontent.com&redirect_uri=REPLACE_WITH_REDIRECT_URI&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.send&login_hint=ggreif%40gmail.com"
+    "https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=776815084452-57d5mm927nf70ea4qhuomtuhggges3tj.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fnew-empty-project-lcr.dev.caffeine.xyz&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.send&login_hint=ggreif%40gmail.com"
   };
 
   /// Return whether a stored access token is present
