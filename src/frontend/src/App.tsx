@@ -21,7 +21,7 @@ export default function App() {
   } = useFriends();
   const { actor } = useActor(createActor);
 
-  const [view, setView] = useState<AppView>("oauth");
+  const [view, setView] = useState<AppView>("location");
   const [location, setLocation] = useState("");
   const [newFriendEmail, setNewFriendEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -30,13 +30,12 @@ export default function App() {
   );
   const [friendError, setFriendError] = useState("");
 
-  // When authenticated, force away from oauth. When unauthenticated, force away from location.
-  // Settings panel is always accessible.
-  const effectiveView: AppView = (() => {
-    if (authStatus === "authenticated" && view === "oauth") return "location";
-    if (authStatus === "unauthenticated" && view === "location") return "oauth";
-    return view;
-  })();
+  // The location/Send view is the default landing view and is always reachable
+  // regardless of authentication status, so the Send button is always present.
+  // If the user is already authenticated, never strand them on the oauth view —
+  // fall back to the location view so the Send button is always visible.
+  const effectiveView: AppView =
+    view === "oauth" && authStatus === "authenticated" ? "location" : view;
 
   const handleSendNotification = useCallback(async () => {
     if (!location.trim()) return;
@@ -74,20 +73,18 @@ export default function App() {
       {/* Tab bar — always visible so settings are accessible when unauthenticated */}
       <div className="border-b border-border bg-card sticky top-0 z-10">
         <div className="flex max-w-sm mx-auto px-4">
-          {authStatus === "authenticated" && (
-            <button
-              type="button"
-              onClick={() => setView("location")}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                effectiveView === "location"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-              data-ocid="nav.location_tab"
-            >
-              Send
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setView("location")}
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+              effectiveView === "location"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            data-ocid="nav.location_tab"
+          >
+            Send
+          </button>
           {authStatus === "unauthenticated" && (
             <button
               type="button"
@@ -397,7 +394,6 @@ export default function App() {
 
             <Button
               onClick={handleSendNotification}
-              disabled={!location.trim() || sending || friends.length === 0}
               className="w-full font-semibold"
               data-ocid="location.send_button"
             >

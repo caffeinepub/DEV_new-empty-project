@@ -30451,7 +30451,7 @@ function App() {
     loading: friendsLoading
   } = useFriends();
   const { actor } = useActor(createActor);
-  const [view, setView] = reactExports.useState("oauth");
+  const [view, setView] = reactExports.useState("location");
   const [location2, setLocation] = reactExports.useState("");
   const [newFriendEmail, setNewFriendEmail] = reactExports.useState("");
   const [sending, setSending] = reactExports.useState(false);
@@ -30459,11 +30459,7 @@ function App() {
     "idle"
   );
   const [friendError, setFriendError] = reactExports.useState("");
-  const effectiveView = (() => {
-    if (authStatus === "authenticated" && view === "oauth") return "location";
-    if (authStatus === "unauthenticated" && view === "location") return "oauth";
-    return view;
-  })();
+  const effectiveView = view === "oauth" && authStatus === "authenticated" ? "location" : view;
   const handleSendNotification = reactExports.useCallback(async () => {
     if (!location2.trim()) return;
     setSending(true);
@@ -30495,7 +30491,7 @@ function App() {
   }, [newFriendEmail, addFriend]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(Layout, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-b border-border bg-card sticky top-0 z-10", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex max-w-sm mx-auto px-4", children: [
-      authStatus === "authenticated" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           type: "button",
@@ -30858,7 +30854,6 @@ function App() {
           Button,
           {
             onClick: handleSendNotification,
-            disabled: !location2.trim() || sending || friends.length === 0,
             className: "w-full font-semibold",
             "data-ocid": "location.send_button",
             children: sending ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
