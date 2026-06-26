@@ -1,0 +1,20 @@
+{
+  "overview": "Gmailer is a travel notification app that lets you send arrival emails to friends via Gmail with one tap.",
+  "features": [
+    "Gmail OAuth login pre-filled with ggreif@gmail.com",
+    "Enter your current location and send arrival notifications",
+    "Sends 'Gabor arrived in <place>' email to all friends via Gmail",
+    "Manage your friends list — add and remove email addresses",
+    "Friends list persists across sessions",
+    "Travel-themed UI with map and journey motifs"
+  ],
+  "category": "productivity",
+  "tags": [
+    "travel",
+    "email",
+    "notifications",
+    "gmail",
+    "friends"
+  ],
+  "last_updated": "2026-06-23T10:21:40.727Z"
+}

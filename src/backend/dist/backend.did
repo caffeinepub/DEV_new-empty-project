@@ -1,0 +1,21 @@
+type SendResult = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type FriendEmail = text;
+type AuthStatus = 
+ variant {
+   authenticated: record {email: text;};
+   notAuthenticated;
+ };
+service : {
+  addFriend: (email: FriendEmail) -> (bool);
+  getAuthStatus: () -> (AuthStatus) query;
+  getFriends: () -> (vec FriendEmail) query;
+  getOAuthUrl: () -> (text);
+  handleOAuthCallback: (accessToken: text, email: text) -> (SendResult);
+  removeFriend: (email: FriendEmail) -> (bool);
+  sendArrivalNotification: (place: text, accessToken: text) ->
+   (vec SendResult);
+}

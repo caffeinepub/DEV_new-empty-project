@@ -1,0 +1,20 @@
+// Version: 1.0.0
+type Data__45091661<K, V> = {var count : Nat__369452189; kvs : [var ?(K, V)]};
+type FriendEmail__574711779 = Text;
+type Internal__112456046<K, V> =
+  {children : [var ?Node__462531142<K, V>]; data : Data__45091661<K, V>};
+type Leaf__57387986<K, V> = {data : Data__45091661<K, V>};
+type Nat__369452189 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__462531142<K, V> =
+  {#internal : Internal__112456046<K, V>; #leaf : Leaf__57387986<K, V>};
+actor {
+  stable var friends :
+    {
+      var blockIndex : Nat__369452189;
+      var blocks : [var [var ?FriendEmail__574711779]];
+      var elementIndex : Nat__369452189
+    };
+  stable var tokenStore :
+    {var root : Node__462531142<Text, Text>; var size : Nat__369452189}
+};
